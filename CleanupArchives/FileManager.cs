@@ -12,9 +12,6 @@ namespace CleanupArchives
             File.Delete(file);
         }
 
-        public IEnumerable<string> GetFiles(string path)
-        {
-            return Directory.GetFiles(path);
-        }
+        public IEnumerable<string> GetFiles(string path) => Directory.GetFiles(path);
     }
 }

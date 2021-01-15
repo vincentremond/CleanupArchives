@@ -10,11 +10,13 @@ namespace CleanupArchives
     {
         private readonly IFileManager fileManager;
         private readonly ITimeProvider timeProvider;
+        private readonly IArchiveTimeStampConverter _archiveTimeStampConverter;
 
-        public Cleaner(IFileManager fileManager, ITimeProvider timeProvider)
+        public Cleaner(IFileManager fileManager, ITimeProvider timeProvider, IArchiveTimeStampConverter archiveTimeStampConverter)
         {
             this.fileManager = fileManager;
             this.timeProvider = timeProvider;
+            _archiveTimeStampConverter = archiveTimeStampConverter;
         }
 
         public void RemoveExtraFiles(IEnumerable<string> files)
@@ -43,38 +45,29 @@ namespace CleanupArchives
                 return new DateTime(date.Year, date.Month, 1);
             }
 
-            // // Some semesters
-            // var semesterStart = SemesterStart(someMonths);
-            // for (int i = 0; i >= -12; i -= 3)
-            // {
-            //     var start = semesterStart.AddMonths(i);
-            //     if (date > start)
-            //     {
-            //         return start;
-            //     }
-            // }
-
             return new DateTime(date.Year, 1, 1);
         }
 
-        private static DateTime SemesterStart(in DateTime someMonths)
-        {
-            return new DateTime(someMonths.Year, someMonths.Month switch
-            {
-                1 => 1,
-                2 => 1,
-                3 => 1,
-                4 => 4,
-                5 => 4,
-                6 => 4,
-                7 => 7,
-                8 => 7,
-                9 => 7,
-                10 => 10,
-                11 => 10,
-                12 => 10,
-            }, 1);
-        }
+        private static DateTime SemesterStart(in DateTime someMonths) =>
+            new DateTime(
+                someMonths.Year,
+                someMonths.Month switch
+                {
+                    1 => 1,
+                    2 => 1,
+                    3 => 1,
+                    4 => 4,
+                    5 => 4,
+                    6 => 4,
+                    7 => 7,
+                    8 => 7,
+                    9 => 7,
+                    10 => 10,
+                    11 => 10,
+                    12 => 10,
+                },
+                1
+            );
 
         public void Clean(string path)
         {
@@ -96,25 +89,20 @@ namespace CleanupArchives
             }
         }
 
-        private bool ToDelete((DateTime Period, string Path, bool ToDelete) arg)
-        {
-            return arg.ToDelete;
-        }
+        private bool ToDelete((DateTime Period, string Path, bool ToDelete) arg) => arg.ToDelete;
 
-        private static IEnumerable<(DateTime Period, string Path, bool ToDelete)> AddFileStatus(IGrouping<DateTime, (string Path, DateTime Time, DateTime Period)> grouping)
-        {
-            return grouping
+        private static IEnumerable<(DateTime Period, string Path, bool ToDelete)> AddFileStatus(IGrouping<DateTime, (string Path, DateTime Time, DateTime Period)> grouping) =>
+            grouping
                 .OrderByDescending(grp => grp.Time)
                 .Select(
                     (grp, index) => (Period: grouping.Key, Path: grp.Path, ToDelete: index > 0)
                 );
-        }
 
         private (string Path, DateTime Time) ExtractDates(string path)
         {
             var reg = new Regex(@"(?<TimeStamp>(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d))");
             var m = reg.Match(path).Groups["TimeStamp"].Value;
-            var time = DateTime.ParseExact(m, @"yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            var time = _archiveTimeStampConverter.ConvertToDateTime(m);
             return (path, time);
         }
 

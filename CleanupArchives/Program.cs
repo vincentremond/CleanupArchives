@@ -1,8 +1,8 @@
 ﻿namespace CleanupArchives
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             var paths = new[]
             {
@@ -11,7 +11,7 @@
             };
             foreach (var path in paths)
             {
-                var cleaner = new Cleaner(new FileManager(), new TimeProvider());
+                var cleaner = new Cleaner(new FileManager(), new TimeProvider(), new ArchiveTimeStampConverter());
                 cleaner.Clean(path);
             }
         }
