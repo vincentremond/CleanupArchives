@@ -1,0 +1,6 @@
+Moq
+NSubstitute
+NUnit
+NUnit3TestAdapter
+Microsoft.NET.Test.Sdk
+ObjectDumper.NET

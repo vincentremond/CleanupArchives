@@ -1,0 +1,10 @@
+source https://api.nuget.org/v3/index.json
+
+storage: none
+framework: auto-detect
+nuget Microsoft.NET.Test.Sdk
+nuget Moq
+nuget NSubstitute
+nuget NUnit
+nuget NUnit3TestAdapter
+nuget ObjectDumper.NET
