@@ -48,27 +48,6 @@ namespace CleanupArchives
             return new DateTime(date.Year, 1, 1);
         }
 
-        private static DateTime SemesterStart(in DateTime someMonths) =>
-            new DateTime(
-                someMonths.Year,
-                someMonths.Month switch
-                {
-                    1 => 1,
-                    2 => 1,
-                    3 => 1,
-                    4 => 4,
-                    5 => 4,
-                    6 => 4,
-                    7 => 7,
-                    8 => 7,
-                    9 => 7,
-                    10 => 10,
-                    11 => 10,
-                    12 => 10,
-                },
-                1
-            );
-
         public void Clean(string path)
         {
             var valueTuples = fileManager.GetFiles(path)
