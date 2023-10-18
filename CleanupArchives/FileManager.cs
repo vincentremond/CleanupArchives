@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace CleanupArchives
 {
     internal class FileManager : IFileManager
     {
-        public void Delete(string file)
+        public void Delete(FileInfo fileInfo)
         {
-            Console.WriteLine($"Delete {file}");
-            File.Delete(file);
+            Console.WriteLine($"Delete {fileInfo}");
+            fileInfo.Delete();
         }
 
-        public IEnumerable<string> GetFiles(string path) => Directory.GetFiles(path);
+        public IEnumerable<FileInfo> GetFiles(string path) => Directory.GetFiles(path).Select(f => new FileInfo(f));
     }
 }

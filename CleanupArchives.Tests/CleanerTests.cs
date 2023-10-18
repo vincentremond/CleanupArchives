@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Moq;
 using NUnit.Framework;
 
@@ -12,7 +14,7 @@ namespace CleanupArchives.Tests
         {
             var mockFileManager = new Mock<IFileManager>();
             var count = 0;
-            mockFileManager.Setup(f => f.Delete(It.IsAny<string>())).Callback(() => count++);
+            mockFileManager.Setup(f => f.Delete(It.IsAny<FileInfo>())).Callback(() => count++);
 
             var cleaner = new Cleaner(
                 mockFileManager.Object,
@@ -28,10 +30,10 @@ namespace CleanupArchives.Tests
                 ),
                 new ArchiveTimeStampConverter()
             );
-            var files = new List<string>
+            var files = new List<FileInfo>
             {
-                @"G:\My Drive\BAK\VREMOND_D-EDGE_BACKUP_20200416_103809.7z",
-                @"G:\My Drive\BAK\VREMOND_D-EDGE_BACKUP_20200416_103809.7z",
+                new(@"G:\My Drive\BAK\VREMOND_D-EDGE_BACKUP_20200416_103809.7z"),
+                new(@"G:\My Drive\BAK\VREMOND_D-EDGE_BACKUP_20200416_103809.7z"),
             };
             cleaner.RemoveExtraFiles(files);
 
@@ -68,10 +70,10 @@ namespace CleanupArchives.Tests
             var cleanOnceResult = BackupEverydayAndCleanOnce(@from, to, path, daySteps);
             var cleanEverydayResult = BackupEverydayAndCleanEveryday(@from, to, path, daySteps);
 
-            Assert.AreEqual(cleanEverydayResult, cleanOnceResult);
+            CollectionAssert.AreEqual(cleanEverydayResult, cleanOnceResult, new FileInfoComparer());
         }
 
-        private static IEnumerable<string> BackupEverydayAndCleanEveryday(DateTime @from, DateTime to, string path, int daySteps)
+        private static IEnumerable<FileInfo> BackupEverydayAndCleanEveryday(DateTime @from, DateTime to, string path, int daySteps)
         {
             var fakeFileManager = new FakeFileManager();
             var fakeTimeProvider = new FakeTimeProvider();
@@ -80,14 +82,14 @@ namespace CleanupArchives.Tests
             for (var current = @from; current <= to; current = current.AddDays(daySteps))
             {
                 fakeTimeProvider.Now = current.AddHours(12);
-                fakeFileManager.Add($@"{path}\BACKUP_{archiveTimeStampConverter.ConvertToString(current)}.7z");
+                fakeFileManager.Add(new FileInfo($@"{path}\BACKUP_{archiveTimeStampConverter.ConvertToString(current)}.7z"));
                 cleaner.Clean(path);
             }
 
             return fakeFileManager.GetAllFiles();
         }
 
-        private static IEnumerable<string> BackupEverydayAndCleanOnce(DateTime @from, DateTime to, string path, int daySteps)
+        private static IEnumerable<FileInfo> BackupEverydayAndCleanOnce(DateTime @from, DateTime to, string path, int daySteps)
         {
             var fakeFileManager = new FakeFileManager();
             var fakeTimeProvider = new FakeTimeProvider();
@@ -95,7 +97,7 @@ namespace CleanupArchives.Tests
             var cleaner = new Cleaner(fakeFileManager, fakeTimeProvider, archiveTimeStampConverter);
             for (var current = @from; current <= to; current = current.AddDays(daySteps))
             {
-                fakeFileManager.Add($@"{path}\BACKUP_{archiveTimeStampConverter.ConvertToString(current)}.7z");
+                fakeFileManager.Add(new FileInfo($@"{path}\BACKUP_{archiveTimeStampConverter.ConvertToString(current)}.7z"));
             }
 
             fakeTimeProvider.Now = to.AddHours(12);
@@ -103,6 +105,21 @@ namespace CleanupArchives.Tests
 
             return fakeFileManager.GetAllFiles();
         }
+    }
 
+    public class FileInfoComparer : IComparer, IComparer<FileInfo>
+    {
+        public int Compare(object? x, object? y) => Compare(x as FileInfo, y as FileInfo);
+
+        public int Compare(FileInfo? x, FileInfo? y)
+        {
+            return (x, y) switch
+            {
+                (null, null) => 0,
+                (null, _) => -1,
+                (_, null) => 1,
+                _ => string.Compare(x.FullName, y.FullName, StringComparison.Ordinal)
+            };
+        }
     }
 }

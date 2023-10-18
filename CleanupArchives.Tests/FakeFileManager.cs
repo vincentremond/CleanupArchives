@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CleanupArchives.Tests
 {
     public class FakeFileManager : IFileManager
     {
-        private readonly List<string> files;
+        private readonly List<FileInfo> _files = new();
 
-        public FakeFileManager()
-        {
-            files = new List<string>();
-        }
-
-        public void Delete(string file) => files.Remove(file);
-        public IEnumerable<string> GetFiles(string path) => files.Where(f => f.StartsWith(path, StringComparison.CurrentCultureIgnoreCase));
-        public IEnumerable<string> GetAllFiles() => files;
-        public void Add(string file) => files.Add(file);
+        public void Delete(FileInfo fileInfo) => _files.Remove(fileInfo);
+        public IEnumerable<FileInfo> GetFiles(string path) => _files.Where(f => f.FullName.StartsWith(path, StringComparison.CurrentCultureIgnoreCase));
+        public void Add(FileInfo file) => _files.Add(file);
+        public IEnumerable<FileInfo> GetAllFiles() => _files;
     }
 }

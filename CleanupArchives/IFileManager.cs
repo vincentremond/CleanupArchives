@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace CleanupArchives
 {
     public interface IFileManager
     {
-        void Delete(string file);
-        IEnumerable<string> GetFiles(string path);
+        void Delete(FileInfo fileInfo);
+        IEnumerable<FileInfo> GetFiles(string path);
     }
 }

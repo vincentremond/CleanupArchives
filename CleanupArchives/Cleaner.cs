@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CleanupArchives
 {
-    public class Cleaner
+    public partial class Cleaner
     {
         private readonly IFileManager fileManager;
         private readonly ITimeProvider timeProvider;
@@ -19,7 +19,7 @@ namespace CleanupArchives
             _archiveTimeStampConverter = archiveTimeStampConverter;
         }
 
-        public void RemoveExtraFiles(IEnumerable<string> files)
+        public void RemoveExtraFiles(IEnumerable<FileInfo> files)
         {
             foreach (var file in files)
             {
@@ -50,16 +50,19 @@ namespace CleanupArchives
 
         public void Clean(string path)
         {
-            var valueTuples = fileManager.GetFiles(path)
-                .Select(ExtractDates)
-                .Select(EnrichPeriod)
-                .GroupBy(x => x.Period)
-                .SelectMany(AddFileStatus)
-                .ToList();
+            var valueTuples =
+                fileManager
+                    .GetFiles(path)
+                    .Where(MatchExpectedPattern)
+                    .Select(ExtractDates)
+                    .Select(EnrichPeriod)
+                    .GroupBy(x => x.Period)
+                    .SelectMany(AddFileStatus)
+                    .ToList();
 
             var filesToDelete = valueTuples
                 .Where(ToDelete)
-                .Select(t => t.Path)
+                .Select(t => t.FileInfo)
                 .ToList();
 
             foreach (var fileToDelete in filesToDelete)
@@ -68,27 +71,45 @@ namespace CleanupArchives
             }
         }
 
-        private bool ToDelete((DateTime Period, string Path, bool ToDelete) arg) => arg.ToDelete;
+        private bool ToDelete((DateTime Period, FileInfo FileInfo, bool ToDelete) arg) => arg.ToDelete;
 
-        private static IEnumerable<(DateTime Period, string Path, bool ToDelete)> AddFileStatus(IGrouping<DateTime, (string Path, DateTime Time, DateTime Period)> grouping) =>
+        private static IEnumerable<(DateTime Period, FileInfo FileInfo, bool ToDelete)> AddFileStatus(IGrouping<DateTime, (FileInfo FileInfo, DateTime BackupTimeStamp, DateTime Period)> grouping) =>
             grouping
-                .OrderByDescending(grp => grp.Time)
+                .OrderByDescending(grp => grp.BackupTimeStamp)
                 .Select(
-                    (grp, index) => (Period: grouping.Key, Path: grp.Path, ToDelete: index > 0)
+                    (grp, index) => (Period: grouping.Key, grp.FileInfo, ToDelete: index > 0)
                 );
 
-        private (string Path, DateTime Time) ExtractDates(string path)
+
+        [GeneratedRegex(@"(?<TimeStamp>(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d))")]
+        private static partial Regex TimeStampRegex();
+
+        [GeneratedRegex(@"^VREMOND_D-EDGE_BACKUP_(?<TimeStamp>(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d))\.7z$")]
+        private static partial Regex FileNameRegex();
+
+        
+        
+        private (FileInfo FileInfo, DateTime BackupTimeStamp) ExtractDates(FileInfo fileInfo)
         {
-            var reg = new Regex(@"(?<TimeStamp>(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d))");
-            var m = reg.Match(path).Groups["TimeStamp"].Value;
-            var time = _archiveTimeStampConverter.ConvertToDateTime(m);
-            return (path, time);
+            var reg = TimeStampRegex();
+
+            var match = reg.Match(fileInfo.FullName);
+            if (!match.Success)
+            {
+                throw new Exception($"Could not parse date from '{fileInfo.FullName}'");
+            }
+
+            var m = match.Groups["TimeStamp"].Value;
+            var timeStamp = _archiveTimeStampConverter.ConvertToDateTime(m);
+            return (fileInfo, timeStamp);
         }
 
-        private (string Path, DateTime Time, DateTime Period) EnrichPeriod((string Path, DateTime Time) arg)
+        private (FileInfo FileInfo, DateTime BackupTimeStamp, DateTime Period) EnrichPeriod((FileInfo FileInfo, DateTime BackupTimeStamp) p)
         {
-            var period = ReferencePeriod(arg.Time, timeProvider.Now);
-            return (arg.Path, arg.Time, period);
+            var period = ReferencePeriod(p.BackupTimeStamp, timeProvider.Now);
+            return (p.FileInfo, p.BackupTimeStamp, period);
         }
+        
+        private static bool MatchExpectedPattern(FileSystemInfo fileInfo) => FileNameRegex().IsMatch(fileInfo.Name);
     }
 }
