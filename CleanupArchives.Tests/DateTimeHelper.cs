@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Globalization;
 
-namespace CleanupArchives.Tests
-{
-    public static class DateTimeHelper
-    {
-        public static DateTime ParseDateTime(this string fileDateStr) => DateTime.ParseExact(fileDateStr, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+namespace CleanupArchives.Tests;
 
-        public static DateTime ParseDate(this string fileDateStr) => DateTime.ParseExact(fileDateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-    }
+public static class DateTimeHelper
+{
+    public static DateTime ParseDateTime(this string fileDateStr) => DateTime.ParseExact(fileDateStr, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+    public static DateTime ParseDate(this string fileDateStr) => DateTime.ParseExact(fileDateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

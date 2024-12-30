@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace CleanupArchives
+namespace CleanupArchives;
+
+public interface ITimeProvider
 {
-    public interface ITimeProvider
-    {
-        DateTime Now { get; }
-    }
+    DateTime Now { get; }
 }
