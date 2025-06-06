@@ -1,18 +1,17 @@
 ﻿using System;
 
-namespace CleanupArchives.Tests
+namespace CleanupArchives.Tests;
+
+public class FakeTimeProvider : ITimeProvider
 {
-    public class FakeTimeProvider : ITimeProvider
+    public FakeTimeProvider(DateTime now)
     {
-        public FakeTimeProvider(DateTime now)
-        {
-            Now = now;
-        }
-
-        public FakeTimeProvider() : this(DateTime.Now)
-        {
-        }
-
-        public DateTime Now { get; set; }
+        Now = now;
     }
+
+    public FakeTimeProvider() : this(DateTime.Now)
+    {
+    }
+
+    public DateTime Now { get; set; }
 }
