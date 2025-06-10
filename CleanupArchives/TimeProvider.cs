@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace CleanupArchives
+namespace CleanupArchives;
+
+internal class TimeProvider : ITimeProvider
 {
-    internal class TimeProvider : ITimeProvider
-    {
-        DateTime ITimeProvider.Now => DateTime.Now;
-    }
+    DateTime ITimeProvider.Now => DateTime.Now;
 }
